@@ -1,0 +1,3 @@
+[submodule "unit_test_for_cmake"]
+	path = unit_test_for_cmake
+	url = ../unit_test_for_cmake.git
