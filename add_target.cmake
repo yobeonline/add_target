@@ -23,7 +23,7 @@ function(add_target name)
 	# the found_options list must have length one
 	# at the end of this loop
 	foreach(opt IN LISTS options)
-		if (DEFINED io1_${opt})
+		if (io1_${opt})
 			list(APPEND found_option ${opt})
 		endif()
 	endforeach()
