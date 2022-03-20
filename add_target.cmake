@@ -195,7 +195,7 @@ function(parse_file_options str out_file out_options)
 		set(${out_options} "${temp_out_options}" PARENT_SCOPE)
 	else()
 		set(${out_file} "${str}" PARENT_SCOPE)
-		unset(${out_options} PARENT_SCOPE)
+		set(${out_options} "" PARENT_SCOPE)
 	endif()
 endfunction()
 
