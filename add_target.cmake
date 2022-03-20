@@ -1,12 +1,14 @@
 cmake_minimum_required(VERSION 3.18)
 
 if (COMMAND add_target)
+	message(WARNING "add_target function already exists, breaking early instead of overriding.")
 	return()
 endif()
 
-function(add_target name)
-	if (TARGET ${name})
-		message(FATAL_ERROR "Cannot add target ${name} because it already exists.")
+
+function(add_target target_name)
+	if (TARGET ${target_name})
+		message(FATAL_ERROR "${CMAKE_CURRENT_FUNCTION}: Cannot add target ${target_name} because it already exists.")
 	endif()
 
 	set(options "STATIC;SHARED;EXECUTALBE;HEADER_ONLY")
@@ -22,60 +24,63 @@ function(add_target name)
 	# options are mutually exclusive
 	# the found_options list must have length one
 	# at the end of this loop
-	foreach(opt IN LISTS options)
-		if (io1_${opt})
-			list(APPEND found_option ${opt})
+	foreach(option IN LISTS options)
+		if (io1_${option})
+			list(APPEND found_option ${option})
 		endif()
 	endforeach()
 	list(LENGTH found_option found_option_count)
 	if (found_option_count EQUAL 0)
-		message(FATAL_ERROR "add_target: missing target type.")
+		message(FATAL_ERROR "${CMAKE_CURRENT_FUNCTION}: missing target type.")
 	elseif (NOT found_option_count EQUAL 1)
-		message(FATAL_ERROR "add_target: cannot define multiple target types.")
+		message(FATAL_ERROR "${CMAKE_CURRENT_FUNCTION}: cannot define multiple target types.")
 	endif()
 	
 	# target sources are the leftover values
-	fetch_sources_and_groups("${io1_UNPARSED_ARGUMENTS})" source_list group_list all_sources)
-	apply_source_groups("${source_list}" "${group_list}")
-	apply_source_options("${all_sources}" sources)
+	fetch_source_files(sources ${io1_UNPARSED_ARGUMENTS})
 
 	# create the target with the type detected by found_option
 	if (DEFINED io1_STATIC)
-		add_library(${name} STATIC ${sources})
+		add_library(${target_name} STATIC ${sources})
 	elseif(DEFINED io1_SHARED)
-		add_library(${name} SHARED ${sources})
+		add_library(${target_name} SHARED ${sources})
 	elseif(DEFINED io1_EXECUTABLE)
-		add_executable(${name} ${sources})
+		add_executable(${target_name} ${sources})
 	elseif(DEFINED io1_HEADER_ONLY)
-		add_library(${name} INTERFACE ${sources})
+		add_library(${target_name} INTERFACE ${sources})
 	endif()
-	message(STATUS "add_target: created ${found_option} target ${name}.")
+
+	# apply source files properties and groups
+	apply_source_groups(${io1_UNPARSED_ARGUMENTS})
+	apply_source_files_properties(${io1_UNPARSED_ARGUMENTS})
+
+	message(STATUS "${CMAKE_CURRENT_FUNCTION}: created ${found_option} target ${target_name}.")
 	
 
 	# configure the target from the multi-value keywords
 	if (DEFINED io1_INCLUDES)
-		target_include_directories(${name} ${io1_INCLUDES})
+		target_include_directories(${target_name} ${io1_INCLUDES})
 	endif()
 	if (DEFINED io1_DEPENDENCIES)
-		target_link_libraries(${name} ${io1_DEPENDENCIES})
+		target_link_libraries(${target_name} ${io1_DEPENDENCIES})
 	endif()
 	if (DEFINED io1_OPTIONS)
-		target_compile_options(${name} ${io1_OPTIONS})
+		target_compile_options(${target_name} ${io1_OPTIONS})
 	endif()
 	if(DEFINED io1_DEFINITIONS)
-		target_compile_definitions(${name} ${io1_DEFINITIONS})
+		target_compile_definitions(${target_name} ${io1_DEFINITIONS})
 	endif()
 	if(DEFINED io1_BOOST_TEST AND BUILD_TESTING)
-		set(test_name "boost-test-${name}")
+		set(test_name "boost-test-${target_name}")
 		if (TARGET ${test_name})
-			message(FATAL_ERROR "add_target: cannot create boost test target ${test_name} because it already exists.")
+			message(FATAL_ERROR "${CMAKE_CURRENT_FUNCTION}: cannot create boost test target ${test_name} because it already exists.")
 		else()
-			message(STATUS "add_target: created boost test target ${test_name}.")
+			message(STATUS "${CMAKE_CURRENT_FUNCTION}: created boost test target ${test_name}.")
 		endif()
 
 		find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 		add_executable(${test_name} ${test_sources})
-		target_link_libraries(${test_name} PRIVATE ${name} Boost::unit_test_framework)
+		target_link_libraries(${test_name} PRIVATE ${target_name} Boost::unit_test_framework)
 
 		add_test(
 		    NAME ${test_name}
@@ -88,16 +93,16 @@ function(add_target name)
 			include(GoogleTest)
 		endif()
 
-		set(test_name "google-test-${name}")
+		set(test_name "google-test-${target_name}")
 		if (TARGET ${test_name})
-			message(FATAL_ERROR "add_target: cannot create google test target ${test_name} because it already exists.")
+			message(FATAL_ERROR "${CMAKE_CURRENT_FUNCTION}: cannot create google test target ${test_name} because it already exists.")
 		else()
-			message(STATUS "add_target: created google test target ${test_name}.")
+			message(STATUS "${CMAKE_CURRENT_FUNCTION}: created google test target ${test_name}.")
 		endif()
 
 		find_package(GTest REQUIRED)
 		add_executable(${test_name} ${test_sources})
-		target_link_libraries(${test_name} PRIVATE ${name} GTest::Main)
+		target_link_libraries(${test_name} PRIVATE ${target_name} GTest::Main)
 
 		gtest_discover_tests(${test_name}
 			WORKING_DIRECTORY $<TARGET_FILE_DIR:${test_name}>
@@ -106,16 +111,23 @@ function(add_target name)
 
 endfunction()
 
-function(fetch_sources_and_groups files source_list group_list all_sources)
+set(source_group_regex "^(.*)//$")
+set(source_file_properties_regex "^(.*):(.*)$")
+
+function(apply_source_groups)
+	fetch_source_groups(sources groups ${ARGN})
+
+	foreach(source group IN ZIP_LISTS sources groups)
+		source_group(NAME "${group}" FILES "${source}")
+	endforeach()
+endfunction()
+
+function(fetch_source_groups out_sources out_groups)
 	set(current_group_name ".")
 	set(current_group_path "/.")
 	
-	unset(${source_list})
-	unset(${group_list})
-	unset(${all_sources})
-
-	foreach(file IN LISTS files)
-		if ("${file}" MATCHES "^(.*)//$")
+	foreach(file IN LISTS ARGN)
+		if ("${file}" MATCHES "${source_group_regex}")
 			set(new_group_path "${CMAKE_MATCH_1}")
 		
 			if (IS_ABSOLUTE "${new_group_path}")
@@ -126,54 +138,64 @@ function(fetch_sources_and_groups files source_list group_list all_sources)
 
 			string(SUBSTRING "${current_group_path}" 1 -1 current_group_name)
 
-		else()
-			if (NOT "${current_group_name}" STREQUAL ".")
-				list(APPEND temp_group_list "${current_group_name}")
-				list(APPEND temp_source_list "${file}")
+		elseif (NOT "${current_group_name}" STREQUAL ".")
+			list(APPEND temp_out_groups "${current_group_name}")
+			if ("${file}" MATCHES "${source_file_properties_regex}")
+				list(APPEND temp_out_sources "${CMAKE_MATCH_1}")
+			else()
+				list(APPEND temp_out_sources "${file}")
 			endif()
-			list(APPEND temp_all_sources "${file}")
 		endif()
 	endforeach()
 
-	set(${all_sources} "${temp_all_sources}" PARENT_SCOPE)
-	set(${source_list} "${temp_source_list}" PARENT_SCOPE)
-	set(${group_list} "${temp_group_list}" PARENT_SCOPE)
+	set(${out_sources} "${temp_out_sources}" PARENT_SCOPE)
+	set(${out_groups} "${temp_out_groups}" PARENT_SCOPE)
 endfunction()
 
-# parse file.c[:opt1,opt2,opt3,...]
-function(parse_file_options str file options)
-	if ("${str}" MATCHES "^(.*):(.*)$")
-		set(${file} "${CMAKE_MATCH_1}" PARENT_SCOPE)
-		string(REPLACE "," ";" temp "${CMAKE_MATCH_2}") # it does not work with ${options} instead of temp, no clue why
-		set(${options} "${temp}" PARENT_SCOPE)
+# strip out groups strings and source file properties
+function(fetch_source_files out_sources)
+	foreach(str IN LISTS ARGN)
+		if ("${str}" MATCHES "${source_group_regex}")
+			continue()
+		endif()
+		
+		if("${str}" MATCHES "${source_file_properties_regex}")
+			list(APPEND temp_out_sources "${CMAKE_MATCH_1}")
+		else()
+			list(APPEND temp_out_sources "${str}")
+		endif()
+	endforeach()
+	
+	set(${out_sources} "${temp_out_sources}" PARENT_SCOPE)
+endfunction()
+
+function(apply_source_files_properties)
+	foreach(str IN LISTS ARGN)
+		if ("${str}" MATCHES "${source_group_regex}")
+			continue()
+		endif()
+		
+		parse_file_options("${str}" file options)
+
+		cmake_parse_arguments(io1 "cpp;header" "" "" ${options})
+		if (DEFINED io1_cpp)
+			set_source_files_properties("${file}" PROPERTIES LANGUAGE CXX)
+		endif()
+		if (DEFINED io1_header)
+			set_source_files_properties("${file}" PROPERTIES HEADER_FILE_ONLY ON)
+		endif()
+	endforeach()
+endfunction()
+
+# expects "file.c[:opt1,opt2,opt3,...]" and parse it into "file.c" and the list "opt1;opt2;opt3"
+function(parse_file_options str out_file out_options)
+	if ("${str}" MATCHES "${source_file_properties_regex}")
+		set(${out_file} "${CMAKE_MATCH_1}" PARENT_SCOPE)
+		string(REPLACE "," ";" temp_out_options "${CMAKE_MATCH_2}")
+		set(${out_options} "${temp_out_options}" PARENT_SCOPE)
 	else()
-		set(${file} "${str}" PARENT_SCOPE)
-		unset(${options} PARENT_SCOPE)
+		set(${out_file} "${str}" PARENT_SCOPE)
+		unset(${out_options} PARENT_SCOPE)
 	endif()
 endfunction()
 
-function(apply_source_options files sources)
-	foreach(file IN LISTS files)
-		parse_file_options("${file}" f opt)
-		apply_file_options("${f}" "${opt}")
-	endforeach()
-endfunction()
-
-# apply the provided group to each file
-# asserts that files and groups have the same size.
-function(apply_source_groups files groups)
-	foreach(file group IN ZIP_LISTS files groups)
-		source_group(NAME ${group} FILES ${file})
-	endforeach()
-endfunction()
-
-# apply options provided as file.c:opt1,opt2,opt3,... if any
-function(apply_file_options file options)
-	cmake_parse_arguments(io1 "cpp;header" "" "" ${options})
-	if (DEFINED io1_cpp)
-		set_source_files_properties("${file}" PROPERTIES LANGUAGE CXX)
-	endif()
-	if (DEFINED io1_header)
-		set_source_files_properties("${file}" PROPERTIES HEADER_FILE_ONLY ON)
-	endif()
-endfunction()
