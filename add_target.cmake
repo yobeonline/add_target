@@ -78,7 +78,8 @@ function(add_target target_name)
 			message(STATUS "${CMAKE_CURRENT_FUNCTION}: created boost test target ${test_name}.")
 		endif()
 
-		find_package(Boost REQUIRED COMPONENTS unit_test_framework)
+		find_package(Boost REQUIRED COMPONENTS unit_test_framework QUIET)
+
 		fetch_source_files(sources ${io1_BOOST_TEST})
 
 		add_executable(${test_name} ${test_sources})
@@ -106,7 +107,7 @@ function(add_target target_name)
 			message(STATUS "${CMAKE_CURRENT_FUNCTION}: created google test target ${test_name}.")
 		endif()
 
-		find_package(GTest REQUIRED)
+		find_package(GTest REQUIRED QUIET)
 		
 		fetch_source_files(sources ${io1_GOOGLE_TEST})
 
