@@ -79,7 +79,13 @@ function(add_target target_name)
 		endif()
 
 		find_package(Boost REQUIRED COMPONENTS unit_test_framework)
+		fetch_source_files(sources ${io1_BOOST_TEST})
+
 		add_executable(${test_name} ${test_sources})
+
+		apply_source_groups(${io1_BOOST_TEST})
+		apply_source_files_properties(${io1_BOOST_TEST})
+
 		target_link_libraries(${test_name} PRIVATE ${target_name} Boost::unit_test_framework)
 
 		add_test(
@@ -101,7 +107,14 @@ function(add_target target_name)
 		endif()
 
 		find_package(GTest REQUIRED)
+		
+		fetch_source_files(sources ${io1_GOOGLE_TEST})
+
 		add_executable(${test_name} ${test_sources})
+
+		apply_source_groups(${io1_GOOGLE_TEST})
+		apply_source_files_properties(${io1_GOOGLE_TEST})
+
 		target_link_libraries(${test_name} PRIVATE ${target_name} GTest::Main)
 
 		gtest_discover_tests(${test_name}
