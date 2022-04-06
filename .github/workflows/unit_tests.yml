@@ -8,3 +8,4 @@ jobs:
         with:
           submodules: 'true'
       - run: cmake -P test_parse_file_options.cmake
+      - run: cmake -P test_fetch_source_files.cmake
