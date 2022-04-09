@@ -70,7 +70,7 @@ function(add_target target_name)
 	if(DEFINED io1_DEFINITIONS)
 		target_compile_definitions(${target_name} ${io1_DEFINITIONS})
 	endif()
-	if(DEFINED io1_BOOST_TEST AND BUILD_TESTING)
+	if(DEFINED io1_BOOST_TEST)
 		set(test_name "boost-test-${target_name}")
 		if (TARGET ${test_name})
 			message(FATAL_ERROR "${CMAKE_CURRENT_FUNCTION}: cannot create boost test target ${test_name} because it already exists.")
@@ -89,13 +89,15 @@ function(add_target target_name)
 
 		target_link_libraries(${test_name} PRIVATE ${target_name} Boost::unit_test_framework)
 
-		add_test(
-		    NAME ${test_name}
-		    COMMAND ${test_name} --catch_system_error=yes --detect_memory_leaks --logger=JUNIT,all,junit_${test_name}.xml
-		    WORKING_DIRECTORY $<TARGET_FILE_DIR:${test_name}>)
-
+		if (BUILD_TESTING)
+			add_test(
+				NAME ${test_name}
+				COMMAND ${test_name} --catch_system_error=yes --detect_memory_leaks --logger=JUNIT,all,junit_${test_name}.xml
+				WORKING_DIRECTORY $<TARGET_FILE_DIR:${test_name}>
+			)
+		endif()
 	endif()
-	if(DEFINED io1_GOOGLE_TEST AND BUILD_TESTING)
+	if(DEFINED io1_GOOGLE_TEST)
 		if (NOT COMMAND gtest_discover_tests)
 			include(GoogleTest)
 		endif()
@@ -118,9 +120,11 @@ function(add_target target_name)
 
 		target_link_libraries(${test_name} PRIVATE ${target_name} GTest::Main)
 
-		gtest_discover_tests(${test_name}
-			WORKING_DIRECTORY $<TARGET_FILE_DIR:${test_name}>
-		)
+		if (BUILD_TESTING)
+			gtest_discover_tests(${test_name}
+				WORKING_DIRECTORY $<TARGET_FILE_DIR:${test_name}>
+			)
+		endif()
 	endif()
 
 endfunction()
