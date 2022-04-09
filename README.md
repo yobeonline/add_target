@@ -50,6 +50,7 @@ add_executable(boost-test-foo test/test1.cpp)
 target_link_libraries(boost-test-foo
 	PRIVATE foo Boost::unit_test_framework
 )
+
 if(BUILD_TESTING)
 	add_test(
 		NAME boost-test-foo
