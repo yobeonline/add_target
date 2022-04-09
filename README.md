@@ -45,19 +45,18 @@ set_source_files_properties(detail/impl.cpp
 	PROPERTIES HEADER_FILE_ONLY ON
 )
 
+find_package(Boost REQUIRED COMPONENTS unit_test_framework QUIET)
+add_executable(boost-test-foo test/test1.cpp)
+target_link_libraries(boost-test-foo
+	PRIVATE foo Boost::unit_test_framework
+)
 if(BUILD_TESTING)
-	find_package(Boost REQUIRED COMPONENTS unit_test_framework QUIET)
-	add_executable(boost-test-foo test/test1.cpp)
-	target_link_libraries(boost-test-foo
-		PRIVATE foo Boost::unit_test_framework
-	)
-
 	add_test(
 		NAME boost-test-foo
 		COMMAND boost-test-foo --catch_system_error=yes --detect_memory_leaks --logger=JUNIT,all,junit_${test_name}.xml
 		WORKING_DIRECTORY $<TARGET_FILE_DIR:boost-test-foo>
 	)
-endfi()
+endif()
 ```
 
 ## References
