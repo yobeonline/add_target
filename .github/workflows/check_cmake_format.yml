@@ -1,0 +1,14 @@
+name: cmake-format check
+on: [push]
+jobs:
+  Check-CMake-Format:
+    name: cmake-format check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Format CMake files
+        uses: PuneetMatharu/cmake-format-lint-action@v1.0.1
+        with:
+          args: --config-files .cmake-format.json --check
