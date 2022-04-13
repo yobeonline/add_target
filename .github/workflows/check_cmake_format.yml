@@ -1,8 +1,8 @@
-name: cmake-format check
+name: check cmake-format
 on: [push]
+
 jobs:
-  Check-CMake-Format:
-    name: cmake-format check
+  check-cmake-format:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
