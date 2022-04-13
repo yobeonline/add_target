@@ -1,0 +1,37 @@
+name: apply cmake-format
+on:
+  pull_request:
+    types: [opened]
+  issue_comment:
+    types: [created]
+
+jobs:
+  do-cmake-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: khan/pull-request-comment-trigger@v1.1.0
+        id: check
+        with:
+          trigger: '/do-cmake-format'
+          reaction: rocket
+        env:
+          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        if: steps.check.outputs.triggered == 'true'
+
+      - name: Format CMake files
+        uses: PuneetMatharu/cmake-format-lint-action@v1.0.1
+        if: steps.check.outputs.triggered == 'true'
+        with:
+          args: --config-files .cmake-format.json --inline
+
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        if: steps.check.outputs.triggered == 'true'
+        with:
+          commit_user_name: cmake-format-bot
+          commit_message: 'Automated commit of cmake-format changes.'
+        env:
+          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
