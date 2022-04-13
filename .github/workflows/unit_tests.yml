@@ -1,7 +1,8 @@
-name: Tests
+name: tests
 on: [push]
+
 jobs:
-  Unit-Tests:
+  unit-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
