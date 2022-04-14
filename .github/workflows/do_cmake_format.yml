@@ -1,4 +1,4 @@
-name: apply cmake-format
+name: do cmake-format
 on:
   pull_request:
     types: [opened]
@@ -12,7 +12,7 @@ jobs:
       - uses: khan/pull-request-comment-trigger@v1.1.0
         id: check
         with:
-          trigger: '@do-cmake-format'
+          trigger: '@deploy'
           reaction: rocket
         env:
           GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
@@ -33,5 +33,3 @@ jobs:
         with:
           commit_user_name: cmake-format-bot
           commit_message: 'Automated commit of cmake-format changes.'
-        env:
-          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
