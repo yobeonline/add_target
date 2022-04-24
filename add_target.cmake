@@ -18,7 +18,8 @@ function(add_target target_name)
 
   set(options "STATIC;SHARED;EXECUTALBE;HEADER_ONLY")
   set(multivalue_keywords
-      "INCLUDES;DEPENDENCIES;OPTIONS;DEFINITIONS;BOOST_TEST;GOOGLE_TEST")
+      "INCLUDES;DEPENDENCIES;OPTIONS;DEFINITIONS;FEATURES;BOOST_TEST;GOOGLE_TEST"
+  )
 
   cmake_parse_arguments(PARSE_ARGV 1 io1 "${options}" ""
                         "${multivalue_keywords}")
@@ -74,6 +75,9 @@ function(add_target target_name)
   endif()
   if(DEFINED io1_DEFINITIONS)
     target_compile_definitions(${target_name} ${io1_DEFINITIONS})
+  endif()
+  if(DEFINED io1_FEATURES)
+    target_compile_features(${target_name} ${io1_FEATURES})
   endif()
   if(DEFINED io1_BOOST_TEST)
     set(test_name "boost-test-${target_name}")

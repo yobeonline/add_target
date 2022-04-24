@@ -69,6 +69,7 @@ add_target(<name>
 	[DEPENDENCIES <target> <lib> … ]
 	[OPTIONS <flag> … ]
 	[DEFINITIONS <define> … ]
+	[FEATURES <features> … ]
 	[BOOST_TEST <source> … ]
 	[GOOGLE_TEST <source> … ]
 )
@@ -97,7 +98,8 @@ The arguments listed after each of these keywords are forwarded as is to the cor
 - `INCLUDES` translates to `target_include_directories()`,
 - `DEPENDENCIES` translates to `target_link_libraries()`,
 - `OPTIONS` translates to `target_compile_options()`,
-- and `DEFINITIONS` translates to `targetçcompile_definitions()`.
+- `DEFINITIONS` translates to `target_compile_definitions()`,
+- and `FEATURES` translates to `target_compile_features()`.
 
 ### Boost and Google Tests
 
