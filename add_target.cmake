@@ -86,10 +86,6 @@ function(add_target target_name)
         FATAL_ERROR
           "${CMAKE_CURRENT_FUNCTION}: cannot create boost test target ${test_name} because it already exists."
       )
-    else()
-      message(
-        STATUS
-          "${CMAKE_CURRENT_FUNCTION}: created boost test target ${test_name}.")
     endif()
 
     find_package(
@@ -97,7 +93,7 @@ function(add_target target_name)
       COMPONENTS unit_test_framework
       QUIET)
 
-    fetch_source_files(sources ${io1_BOOST_TEST})
+    fetch_source_files(test_sources ${io1_BOOST_TEST})
 
     add_executable(${test_name} ${test_sources})
 
@@ -107,12 +103,21 @@ function(add_target target_name)
     target_link_libraries(${test_name} PRIVATE ${target_name}
                                                Boost::unit_test_framework)
 
+    message(
+      STATUS
+        "${CMAKE_CURRENT_FUNCTION}: created boost test target ${test_name}.")
+
     if(BUILD_TESTING)
       add_test(
         NAME ${test_name}
         COMMAND ${test_name} --catch_system_error=yes --detect_memory_leaks
                 --logger=JUNIT,all,junit_${test_name}.xml
         WORKING_DIRECTORY $<TARGET_FILE_DIR:${test_name}>)
+    else()
+      message(
+        STATUS
+          "${CMAKE_CURRENT_FUNCTION}: skipped declaring ${test_name} to CTest because BUILD_TESTING is false."
+      )
     endif()
   endif()
   if(DEFINED io1_GOOGLE_TEST)
@@ -126,15 +131,11 @@ function(add_target target_name)
         FATAL_ERROR
           "${CMAKE_CURRENT_FUNCTION}: cannot create google test target ${test_name} because it already exists."
       )
-    else()
-      message(
-        STATUS
-          "${CMAKE_CURRENT_FUNCTION}: created google test target ${test_name}.")
     endif()
 
     find_package(GTest REQUIRED QUIET)
 
-    fetch_source_files(sources ${io1_GOOGLE_TEST})
+    fetch_source_files(test_sources ${io1_GOOGLE_TEST})
 
     add_executable(${test_name} ${test_sources})
 
@@ -142,10 +143,18 @@ function(add_target target_name)
     apply_source_files_properties(${io1_GOOGLE_TEST})
 
     target_link_libraries(${test_name} PRIVATE ${target_name} GTest::Main)
+    message(
+      STATUS
+        "${CMAKE_CURRENT_FUNCTION}: created google test target ${test_name}.")
 
     if(BUILD_TESTING)
       gtest_discover_tests(${test_name}
                            WORKING_DIRECTORY $<TARGET_FILE_DIR:${test_name}>)
+    else()
+      message(
+        STATUS
+          "${CMAKE_CURRENT_FUNCTION}: skipped declaring ${test_name} to CTest because BUILD_TESTING is false."
+      )
     endif()
   endif()
 
