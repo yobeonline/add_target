@@ -64,7 +64,7 @@ endif()
 
 ```cmake
 add_target(<name>
-	STATIC|SHARED|HEADER_ONLY|EXECUTABLE <source> …
+	STATIC|SHARED|HEADER_ONLY|EXECUTABLE|WIN32_EXECUTABLE <source> …
 	[INCLUDES <folder> … ]
 	[DEPENDENCIES <target> <lib> … ]
 	[OPTIONS <flag> … ]
@@ -82,7 +82,9 @@ The target `<name>` is created as if the following commands were called.
 - `add_library(<name> STATIC <source> …)` for `STATIC`,
 - `add_library(<name> SHARED <source> …)` for `SHARED`,
 - `add_library(<name> INTERFACE <source> …)` for `HEADER_ONLY`,
-- `add_executable(<name> <source> …)` for `EXECUTABLE`.
+- `add_executable(<name> <source> …)` for `EXECUTABLE`,
+- `add_executable(<name> WIN32 <source> …)` for `WIN32_EXECUTABLE`,
+- `add_library(<name> <source> …)` if no type is provided.
 
 ### Target Configuration
 

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+include_guard()
 
 if(COMMAND add_target)
   message(
@@ -16,7 +16,7 @@ function(add_target target_name)
     )
   endif()
 
-  set(options "STATIC;SHARED;EXECUTALBE;HEADER_ONLY")
+  set(options "STATIC;SHARED;EXECUTALBE;WIN32_EXECUTABLE;HEADER_ONLY")
   set(multivalue_keywords
       "INCLUDES;DEPENDENCIES;OPTIONS;DEFINITIONS;FEATURES;BOOST_TEST;GOOGLE_TEST"
   )
@@ -32,9 +32,7 @@ function(add_target target_name)
     endif()
   endforeach()
   list(LENGTH found_option found_option_count)
-  if(found_option_count EQUAL 0)
-    message(FATAL_ERROR "${CMAKE_CURRENT_FUNCTION}: missing target type.")
-  elseif(NOT found_option_count EQUAL 1)
+  if(NOT found_option_count LESS_EQUAL 1)
     message(
       FATAL_ERROR
         "${CMAKE_CURRENT_FUNCTION}: cannot define multiple target types.")
@@ -52,6 +50,10 @@ function(add_target target_name)
     add_executable(${target_name} ${sources})
   elseif(io1_HEADER_ONLY)
     add_library(${target_name} INTERFACE ${sources})
+  elseif (io1_WIN32_EXECUTABLE)
+    add_executable(${target_name} WIN32 ${sources})
+  else()
+    add_library(${target_name} ${sources})
   endif()
 
   # apply source files properties and groups
