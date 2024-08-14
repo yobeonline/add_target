@@ -1,4 +1,4 @@
-ct_add_test(NAME main)
+ct_add_test(NAME parse_file_options.main)
 function(${CMAKETEST_TEST})
   parse_file_options("test.cpp" file options)
   ct_assert_equal(file "test.cpp")
@@ -36,7 +36,7 @@ endfunction()
 
 # Using same variable names as in function definition because some
 # implementations may break in this case.
-ct_add_test(NAME same_variable_names)
+ct_add_test(NAME parse_file_options.same_variable_names)
 function(${CMAKETEST_TEST})
   parse_file_options("test.cpp" out_file out_options)
   ct_assert_equal(out_file "test.cpp")
