@@ -1,3 +1,5 @@
+include(cmake_test/cmake_test)
+
 ct_add_test(NAME parse_file_options.main)
 function(${CMAKETEST_TEST})
   parse_file_options("test.cpp" file options)
