@@ -163,7 +163,7 @@ function(add_target target_name)
 endfunction()
 
 set(source_group_regex "^(.*)//$")
-set(source_file_properties_regex "^(.*):(.*)$")
+set(source_file_properties_regex "^(.+):?(.*)$")
 
 function(apply_source_groups)
   fetch_source_groups(sources groups ${ARGN})
@@ -227,9 +227,11 @@ function(fetch_source_files out_sources)
       PARENT_SCOPE)
 endfunction()
 
+
 function(apply_source_files_properties)
   foreach(str IN LISTS ARGN)
-    if("${str}" MATCHES "${source_group_regex}")
+    is_source_group("${str}" out)
+    if(out)
       continue()
     endif()
 
@@ -245,29 +247,63 @@ function(apply_source_files_properties)
   endforeach()
 endfunction()
 
+# adds src to target, applying options
+function(io1_add_source_file target src)
+	io1_parse_file_options("${src}" file options)
+
+	get_target_property(type ${target} TYPE)
+	if (${type} STREQUAL "INTERFACE_LIBRARY")
+		target_sources(${target} INTERFACE ${file})
+	else()
+		target_sources(${target} PRIVATE ${file})
+	endif()
+
+	cmake_parse_arguments(io1 "cpp;header" "" "" ${options})
+	if(io1_cpp)
+		set_source_files_properties("${file}" PROPERTIES LANGUAGE CXX)
+	endif()
+	if(io1_header)
+		set_source_files_properties("${file}" PROPERTIES HEADER_FILE_ONLY ON)
+	endif()
+endfunction()
+
+# any string that ends with // is a source group
+function(io1_is_source_group str res)
+	if("${str}" MATCHES "^(.*)//$")
+		set(${res} "TRUE" PARENT_SCOPE)
+	else()
+		set(${res} "FALSE" PARENT_SCOPE)
+	endif()
+endfunction()
+
 # expects "file.c[:opt1,opt2,opt3,...]" and parse it into "file.c" and the list
 # "opt1;opt2;opt3"
-function(parse_file_options str out_file out_options)
-  if("${str}" MATCHES "${source_file_properties_regex}")
-    set(${out_file}
-        "${CMAKE_MATCH_1}"
-        PARENT_SCOPE)
-    if("${CMAKE_MATCH_1}" STREQUAL "")
-      set(${out_options}
-          ""
-          PARENT_SCOPE)
-    else()
-      string(REPLACE "," ";" temp_out_options "${CMAKE_MATCH_2}")
-      set(${out_options}
-          "${temp_out_options}"
-          PARENT_SCOPE)
-    endif()
-  else()
-    set(${out_file}
-        "${str}"
-        PARENT_SCOPE)
-    set(${out_options}
-        ""
-        PARENT_SCOPE)
-  endif()
+function(io1_parse_file_options str out_file out_options)
+	if("${str}" MATCHES "^(.*):(.*)$")
+		if ("${CMAKE_MATCH_1}" STREQUAL "")
+			message(FATAL_ERROR "${CMAKE_CURRENT_FUNCTION}: ignored orphaned source option '${CMAKE_MATCH_2}'.")
+		else()
+			set(${out_file}
+				"${CMAKE_MATCH_1}"
+				PARENT_SCOPE)
+
+			if("${CMAKE_MATCH_2}" STREQUAL "")
+			  unset(${out_options}
+				  PARENT_SCOPE)
+			else()
+			  string(REPLACE "," ";" temp_out_options "${CMAKE_MATCH_2}")
+			  set(${out_options}
+				  "${temp_out_options}"
+				  PARENT_SCOPE)
+			endif()
+		endif()
+	else()
+		set(${out_file}
+			"${str}"
+			PARENT_SCOPE
+		)
+		unset(${out_options}
+			PARENT_SCOPE
+		)
+	endif()
 endfunction()

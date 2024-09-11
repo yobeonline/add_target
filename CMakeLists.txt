@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.19)
 
 project(test_add_target)
 
-include(add_target.cmake)
-
 macro(get_cmake_test)
     include(cmake_test/cmake_test OPTIONAL RESULT_VARIABLE cmake_test_found)
     if(NOT cmake_test_found)
@@ -30,4 +28,5 @@ get_cmake_test()
 
 include(cmake_test/cmake_test)
 
-ct_add_dir("test")
+enable_testing()
+ct_add_dir("test" USE_REL_PATH_NAMES)
