@@ -248,9 +248,7 @@ function(apply_source_files_properties)
 endfunction()
 
 # adds src to target, applying options
-function(io1_add_source_file target src)
-	io1_parse_file_options("${src}" file options)
-
+function(io1_add_source_file target file props)
 	get_target_property(type ${target} TYPE)
 	if (${type} STREQUAL "INTERFACE_LIBRARY")
 		target_sources(${target} INTERFACE ${file})
@@ -258,12 +256,12 @@ function(io1_add_source_file target src)
 		target_sources(${target} PRIVATE ${file})
 	endif()
 
-	cmake_parse_arguments(io1 "cpp;header" "" "" ${options})
-	if(io1_cpp)
-		set_source_files_properties("${file}" PROPERTIES LANGUAGE CXX)
-	endif()
+	cmake_parse_arguments(io1 "cpp;header" "" "" ${props})
 	if(io1_header)
 		set_source_files_properties("${file}" PROPERTIES HEADER_FILE_ONLY ON)
+	endif()
+	if(io1_cpp)
+		set_source_files_properties("${file}" TARGET_DIRECTORY ${target} PROPERTIES LANGUAGE CXX)
 	endif()
 endfunction()
 
@@ -288,13 +286,13 @@ function(io1_parse_file_options str out_file out_options)
 				PARENT_SCOPE)
 
 			if("${CMAKE_MATCH_2}" STREQUAL "")
-			  unset(${out_options}
-				  PARENT_SCOPE)
+				unset(${out_options}
+				PARENT_SCOPE)
 			else()
-			  string(REPLACE "," ";" temp_out_options "${CMAKE_MATCH_2}")
-			  set(${out_options}
-				  "${temp_out_options}"
-				  PARENT_SCOPE)
+				string(REPLACE "," ";" temp_out_options "${CMAKE_MATCH_2}")
+				set(${out_options}
+					"${temp_out_options}"
+					PARENT_SCOPE)
 			endif()
 		endif()
 	else()
@@ -307,3 +305,4 @@ function(io1_parse_file_options str out_file out_options)
 		)
 	endif()
 endfunction()
+
