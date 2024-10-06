@@ -6,7 +6,7 @@ function(${CMAKETEST_TEST})
 
 	project(foo LANGUAGES CXX)
 	add_library(foo STATIC)
-	io1_add_source_file(foo "foo/main.cpp" "")
+	io1_add_source_file(foo "foo/main.cpp" "" "")
 	
 	get_target_property(prop foo SOURCES)
 	ct_assert_equal(prop "foo/main.cpp") # main.cpp was added to sources
@@ -25,7 +25,7 @@ function(${CMAKETEST_TEST})
 	
 	project(foo_header LANGUAGES CXX)
 	add_library(foo_header STATIC "foo_header/main.cpp")
-	io1_add_source_file(foo_header "foo_header/header.cpp" "header")
+	io1_add_source_file(foo_header "foo_header/header.cpp" "header" "")
 
 	get_target_property(prop foo_header SOURCES)
 	ct_assert_equal(prop "foo_header/main.cpp;foo_header/header.cpp") # header.cpp was added to sources
@@ -43,7 +43,7 @@ function(${CMAKETEST_TEST})
 
 	project(foo_cpp LANGUAGES CXX)
 	add_library(foo_cpp STATIC)
-	io1_add_source_file(foo_cpp "foo_cpp/main.c" "cpp")
+	io1_add_source_file(foo_cpp "foo_cpp/main.c" "cpp" "")
 
 	get_target_property(prop foo_cpp SOURCES)
 	ct_assert_equal(prop "foo_cpp/main.c") # main.c was added to sources
@@ -62,7 +62,7 @@ function(${CMAKETEST_TEST})
 
 	project(foo_cpp_header LANGUAGES CXX)
 	add_library(foo_cpp_header STATIC foo_cpp_header/main.cpp)
-	io1_add_source_file(foo_cpp_header "foo_cpp_header/header.c" "cpp;header")
+	io1_add_source_file(foo_cpp_header "foo_cpp_header/header.c" "cpp;header" "")
 
 	get_target_property(prop foo_cpp_header SOURCES)
 	ct_assert_equal(prop "foo_cpp_header/main.cpp;foo_cpp_header/header.c") # header.c was added to sources
@@ -81,7 +81,7 @@ function(${CMAKETEST_TEST})
 
 	project(foo_header_cpp LANGUAGES CXX)
 	add_library(foo_header_cpp STATIC foo_header_cpp/main.cpp)
-	io1_add_source_file(foo_header_cpp "foo_header_cpp/header.c" "header;cpp")
+	io1_add_source_file(foo_header_cpp "foo_header_cpp/header.c" "header;cpp" "")
 
 	get_target_property(prop foo_header_cpp SOURCES)
 	ct_assert_equal(prop "foo_header_cpp/main.cpp;foo_header_cpp/header.c") # header.c was added to sources
