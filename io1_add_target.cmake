@@ -250,9 +250,9 @@ endfunction()
 # any string that ends with // is a source group
 function(io1_is_source_group str res)
 	if("${str}" MATCHES "^(.*)//$")
-		set(${res} "TRUE" PARENT_SCOPE)
+		set(${res} "${CMAKE_MATCH_1}" PARENT_SCOPE)
 	else()
-		set(${res} "FALSE" PARENT_SCOPE)
+		unset(${res} PARENT_SCOPE)
 	endif()
 endfunction()
 
