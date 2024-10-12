@@ -1,230 +1,186 @@
 include_guard()
 
-if(COMMAND add_target)
-  message(
-    WARNING
-      "add_target function already exists, breaking early instead of overriding."
-  )
-  return()
+if(COMMAND io1_add_target)
+	message(
+		WARNING
+		"io1_add_target function already exists, breaking early instead of overriding."
+	)
+	return()
 endif()
 
-function(add_target target_name)
-  if(TARGET ${target_name})
-    message(
-      FATAL_ERROR
-        "${CMAKE_CURRENT_FUNCTION}: Cannot add target ${target_name} because it already exists."
-    )
-  endif()
+function(io1_add_target target_name)
+	if(TARGET ${target_name})
+	message(
+		FATAL_ERROR
+		"${CMAKE_CURRENT_FUNCTION}: Cannot add target ${target_name} because it already exists."
+	)
+	endif()
 
-  set(options "STATIC;SHARED;EXECUTALBE;WIN32_EXECUTABLE;HEADER_ONLY")
-  set(multivalue_keywords
-      "INCLUDES;DEPENDENCIES;OPTIONS;DEFINITIONS;FEATURES;BOOST_TEST;GOOGLE_TEST"
-  )
+	set(options "STATIC;SHARED;EXECUTALBE;WIN32_EXECUTABLE;HEADER_ONLY")
+	set(multivalue_keywords
+		"INCLUDES;DEPENDS;OPTIONS;DEFINITIONS;FEATURES;BOOST_TEST;GOOGLE_TEST"
+	)
 
-  cmake_parse_arguments(PARSE_ARGV 1 io1 "${options}" ""
-                        "${multivalue_keywords}")
+	cmake_parse_arguments(PARSE_ARGV 1 io1 "${options}" ""
+						"${multivalue_keywords}")
 
-  # options are mutually exclusive the found_options list must have length one
-  # at the end of this loop
-  foreach(option IN LISTS options)
-    if(io1_${option})
-      list(APPEND found_option ${option})
-    endif()
-  endforeach()
-  list(LENGTH found_option found_option_count)
-  if(NOT found_option_count LESS_EQUAL 1)
-    message(
-      FATAL_ERROR
-        "${CMAKE_CURRENT_FUNCTION}: cannot define multiple target types.")
-  endif()
+	# options are mutually exclusive the found_options list must have length one
+	# at the end of this loop
+	foreach(option IN LISTS options)
+	if(io1_${option})
+		list(APPEND found_option ${option})
+	endif()
+	endforeach()
 
-  # target sources are the leftover values
-  fetch_source_files(sources ${io1_UNPARSED_ARGUMENTS})
+	list(LENGTH found_option found_option_count)
+	if(NOT found_option_count LESS_EQUAL 1)
+	message(
+		FATAL_ERROR
+			"${CMAKE_CURRENT_FUNCTION}: cannot define multiple target types.")
+	endif()
 
-  # create the target with the type detected by found_option
-  if(io1_STATIC)
-    add_library(${target_name} STATIC ${sources})
-  elseif(io1_SHARED)
-    add_library(${target_name} SHARED ${sources})
-  elseif(io1_EXECUTABLE)
-    add_executable(${target_name} ${sources})
-  elseif(io1_HEADER_ONLY)
-    add_library(${target_name} INTERFACE ${sources})
-  elseif (io1_WIN32_EXECUTABLE)
-    add_executable(${target_name} WIN32 ${sources})
-  else()
-    add_library(${target_name} ${sources})
-  endif()
+	# target sources are the leftover values
+	fetch_source_files(sources ${io1_UNPARSED_ARGUMENTS})
 
-  # apply source files properties and groups
-  apply_source_groups(${io1_UNPARSED_ARGUMENTS})
-  apply_source_files_properties(${io1_UNPARSED_ARGUMENTS})
+	# create the target with the type detected by found_option
+	if(io1_STATIC)
+		add_library(${target_name} STATIC)
+	elseif(io1_SHARED)
+		add_library(${target_name} SHARED)
+	elseif(io1_EXECUTABLE)
+		add_executable(${target_name})
+	elseif(io1_HEADER_ONLY)
+		add_library(${target_name} INTERFACE)
+	elseif (io1_WIN32_EXECUTABLE)
+		add_executable(${target_name} WIN32)
+	else()
+		add_library(${target_name})
+	endif()
 
-  message(
-    STATUS
-      "${CMAKE_CURRENT_FUNCTION}: created ${found_option} target ${target_name}."
-  )
+	# adding sources
+	io1_target_add_sources(${target_name} ${io1_UNPARSED_ARGUMENTS})
 
-  # configure the target from the multi-value keywords
-  if(DEFINED io1_INCLUDES)
-    target_include_directories(${target_name} ${io1_INCLUDES})
-  endif()
-  if(DEFINED io1_DEPENDENCIES)
-    target_link_libraries(${target_name} ${io1_DEPENDENCIES})
-  endif()
-  if(DEFINED io1_OPTIONS)
-    target_compile_options(${target_name} ${io1_OPTIONS})
-  endif()
-  if(DEFINED io1_DEFINITIONS)
-    target_compile_definitions(${target_name} ${io1_DEFINITIONS})
-  endif()
-  if(DEFINED io1_FEATURES)
-    target_compile_features(${target_name} ${io1_FEATURES})
-  endif()
-  if(DEFINED io1_BOOST_TEST)
-    set(test_name "boost-test-${target_name}")
-    if(TARGET ${test_name})
-      message(
-        FATAL_ERROR
-          "${CMAKE_CURRENT_FUNCTION}: cannot create boost test target ${test_name} because it already exists."
-      )
-    endif()
+	message(
+		STATUS
+			"${CMAKE_CURRENT_FUNCTION}: created ${found_option} target ${target_name}."
+	)
 
-    find_package(
-      Boost REQUIRED
-      COMPONENTS unit_test_framework
-      QUIET)
+	# configure the target from the multi-value keywords
+	if(DEFINED io1_INCLUDES)
+		target_include_directories(${target_name} ${io1_INCLUDES})
+	endif()
+	if(DEFINED io1_DEPENDENCIES)
+		target_link_libraries(${target_name} ${io1_DEPENDENCIES})
+	endif()
+	if(DEFINED io1_OPTIONS)
+		target_compile_options(${target_name} ${io1_OPTIONS})
+	endif()
+	if(DEFINED io1_DEFINITIONS)
+		target_compile_definitions(${target_name} ${io1_DEFINITIONS})
+	endif()
+	if(DEFINED io1_FEATURES)
+		target_compile_features(${target_name} ${io1_FEATURES})
+	endif()
 
-    fetch_source_files(test_sources ${io1_BOOST_TEST})
+	if(DEFINED io1_BOOST_TEST)
+		set(test_name "boost-test-${target_name}")
+		if(TARGET ${test_name})
+			message(
+				FATAL_ERROR
+					"${CMAKE_CURRENT_FUNCTION}: cannot create boost test target ${test_name} because it already exists."
+		  )
+		endif()
 
-    add_executable(${test_name} ${test_sources})
+		find_package(
+			Boost REQUIRED
+			COMPONENTS unit_test_framework
+			QUIET)
 
-    apply_source_groups(${io1_BOOST_TEST})
-    apply_source_files_properties(${io1_BOOST_TEST})
 
-    target_link_libraries(${test_name} PRIVATE ${target_name}
-                                               Boost::unit_test_framework)
+		add_executable(${test_name})
+		io1_target_add_sources(${test_name} ${io1_BOOST_TEST})
 
-    message(
-      STATUS
-        "${CMAKE_CURRENT_FUNCTION}: created boost test target ${test_name}.")
+		target_link_libraries(${test_name} PRIVATE ${target_name}
+												   Boost::unit_test_framework)
 
-    if(BUILD_TESTING)
-      add_test(
-        NAME ${test_name}
-        COMMAND ${test_name} --catch_system_error=yes --detect_memory_leaks
-                --logger=JUNIT,all,junit_${test_name}.xml
-        WORKING_DIRECTORY $<TARGET_FILE_DIR:${test_name}>)
-    else()
-      message(
-        STATUS
-          "${CMAKE_CURRENT_FUNCTION}: skipped declaring ${test_name} to CTest because BUILD_TESTING is false."
-      )
-    endif()
-  endif()
-  if(DEFINED io1_GOOGLE_TEST)
-    if(NOT COMMAND gtest_discover_tests)
-      include(GoogleTest)
-    endif()
+		message(
+			STATUS
+			"${CMAKE_CURRENT_FUNCTION}: created boost test target ${test_name}.")
 
-    set(test_name "google-test-${target_name}")
-    if(TARGET ${test_name})
-      message(
-        FATAL_ERROR
-          "${CMAKE_CURRENT_FUNCTION}: cannot create google test target ${test_name} because it already exists."
-      )
-    endif()
+		if(BUILD_TESTING)
+			add_test(
+				NAME ${test_name}
+				COMMAND ${test_name} --catch_system_error=yes --detect_memory_leaks
+						--logger=JUNIT,all,junit_${test_name}.xml
+				WORKING_DIRECTORY $<TARGET_FILE_DIR:${test_name}>)
+		else()
+			message(
+				STATUS
+					"${CMAKE_CURRENT_FUNCTION}: skipped declaring ${test_name} to CTest because BUILD_TESTING is false."
+			)
+		endif()
+	endif()
+	if(DEFINED io1_GOOGLE_TEST)
+		if(NOT COMMAND gtest_discover_tests)
+			include(GoogleTest)
+		endif()
 
-    find_package(GTest REQUIRED QUIET)
+		set(test_name "google-test-${target_name}")
+		if(TARGET ${test_name})
+			message(
+			FATAL_ERROR
+				"${CMAKE_CURRENT_FUNCTION}: cannot create google test target ${test_name} because it already exists."
+		)
+		endif()
 
-    fetch_source_files(test_sources ${io1_GOOGLE_TEST})
+		find_package(GTest REQUIRED QUIET)
 
-    add_executable(${test_name} ${test_sources})
+		add_executable(${test_name})
+		io1_target_add_sources(${test_name} ${io1_GOOGLE_TEST})
 
-    apply_source_groups(${io1_GOOGLE_TEST})
-    apply_source_files_properties(${io1_GOOGLE_TEST})
+		target_link_libraries(${test_name} PRIVATE ${target_name} GTest::Main)
+		message(
+			STATUS
+				"${CMAKE_CURRENT_FUNCTION}: created google test target ${test_name}.")
 
-    target_link_libraries(${test_name} PRIVATE ${target_name} GTest::Main)
-    message(
-      STATUS
-        "${CMAKE_CURRENT_FUNCTION}: created google test target ${test_name}.")
-
-    if(BUILD_TESTING)
-      gtest_discover_tests(${test_name}
-                           WORKING_DIRECTORY $<TARGET_FILE_DIR:${test_name}>)
-    else()
-      message(
-        STATUS
-          "${CMAKE_CURRENT_FUNCTION}: skipped declaring ${test_name} to CTest because BUILD_TESTING is false."
-      )
-    endif()
-  endif()
+		if(BUILD_TESTING)
+			gtest_discover_tests(${test_name}
+							   WORKING_DIRECTORY $<TARGET_FILE_DIR:${test_name}>)
+		else()
+			message(
+			STATUS
+				"${CMAKE_CURRENT_FUNCTION}: skipped declaring ${test_name} to CTest because BUILD_TESTING is false."
+		  )
+		endif()
+	endif()
 
 endfunction()
 
-set(source_group_regex "^(.*)//$")
-set(source_file_properties_regex "^(.+):?(.*)$")
-
-function(apply_source_groups)
-  fetch_source_groups(sources groups ${ARGN})
-
-  foreach(source group IN ZIP_LISTS sources groups)
-    source_group(NAME "${group}" FILES "${source}")
-  endforeach()
+function(io1_target_add_sources target_name)
+	set(current_group "/")
+	foreach(str IN LISTS ${ARGN})
+		io1_is_source_group("${str}" res)
+		if(DEFINED res)
+			io1_update_source_group("${current_group}" "${res}" current_group)
+		else()
+			io1_parse_file_options("${str}" filename options)
+			io1_add_source_file(${target_name} "${filename}" ${options} "${current_group}")
+		endif()
+	endforeach()
 endfunction()
 
-function(fetch_source_groups out_sources out_groups)
-  set(current_group_name ".")
-  set(current_group_path "/.")
+# update a given source group
+function(io1_update_source_group current_group str updated_group)
+	if(IS_ABSOLUTE "${str}")
+		message("${str} is absolute")
+		set(${updated_group} "${str}" PARENT_SCOPE)
+	else()
+		message("${str} is not absolute")
+		get_filename_component(temp "${str}" ABSOLUTE BASE_DIR "${current_group}")
+		message("${temp} is ${str} relative to ${current_group}")
+		set(${updated_group} "${temp}" PARENT_SCOPE)
+	endif()
 
-  foreach(file IN LISTS ARGN)
-    if("${file}" MATCHES "${source_group_regex}")
-      set(new_group_path "${CMAKE_MATCH_1}")
-
-      if(IS_ABSOLUTE "${new_group_path}")
-        set(current_group_path "${new_group_path}")
-      else()
-        get_filename_component(current_group_path "${new_group_path}" ABSOLUTE
-                               BASE_DIR "${current_group_path}")
-      endif()
-
-      string(SUBSTRING "${current_group_path}" 1 -1 current_group_name)
-
-    elseif(NOT "${current_group_name}" STREQUAL ".")
-      list(APPEND temp_out_groups "${current_group_name}")
-      if("${file}" MATCHES "${source_file_properties_regex}")
-        list(APPEND temp_out_sources "${CMAKE_MATCH_1}")
-      else()
-        list(APPEND temp_out_sources "${file}")
-      endif()
-    endif()
-  endforeach()
-
-  set(${out_sources}
-      "${temp_out_sources}"
-      PARENT_SCOPE)
-  set(${out_groups}
-      "${temp_out_groups}"
-      PARENT_SCOPE)
-endfunction()
-
-# strip out groups strings and source file properties
-function(fetch_source_files out_sources)
-  foreach(str IN LISTS ARGN)
-    if("${str}" MATCHES "${source_group_regex}")
-      continue()
-    endif()
-
-    if("${str}" MATCHES "${source_file_properties_regex}")
-      list(APPEND temp_out_sources "${CMAKE_MATCH_1}")
-    else()
-      list(APPEND temp_out_sources "${str}")
-    endif()
-  endforeach()
-
-  set(${out_sources}
-      "${temp_out_sources}"
-      PARENT_SCOPE)
 endfunction()
 
 # adds src to target, applying options and source group
